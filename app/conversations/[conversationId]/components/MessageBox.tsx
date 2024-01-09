@@ -1,5 +1,5 @@
 'use client';
-
+import React from 'react';
 import clsx from "clsx";
 import Image from "next/image";
 import { useState } from "react";
@@ -9,6 +9,7 @@ import { FullMessageType } from "@/app/types";
 
 import Avatar from "@/app/components/Avatar";
 import ImageModal from "./ImageModal";
+import { useAudioContext } from '@/app/context/AudioContext';
 
 interface MessageBoxProps {
   data: FullMessageType;
@@ -21,6 +22,13 @@ const MessageBox: React.FC<MessageBoxProps> = ({
 }) => {
   const session = useSession();
   const [imageModalOpen, setImageModalOpen] = useState(false);
+
+  // window.addEventListener('addAudioToBody', (event:any) => {
+  //   const { audioElement } = event.detail;
+  //   document.body.appendChild(audioElement);
+  // });
+
+  const { audioContainerRef } = useAudioContext();
 
 
   const isOwn = session.data?.user?.email === data?.sender?.email
@@ -70,7 +78,7 @@ const MessageBox: React.FC<MessageBoxProps> = ({
               "
             />
           ) : (
-            <div>{data.body}</div>
+            <div ref={audioContainerRef}>{data.body}</div>
           )}
         </div>
         {isLast && isOwn && seenList.length > 0 && (

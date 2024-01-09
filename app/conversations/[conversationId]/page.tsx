@@ -5,6 +5,7 @@ import Header from "./components/Header";
 import Body from "./components/Body";
 import Form from "./components/Form";
 import EmptyState from "@/app/components/EmptyState";
+import { AudioProvider } from "@/app/context/AudioContext";
 
 interface IParams {
   conversationId: string;
@@ -27,9 +28,11 @@ const ChatId = async ({ params }: { params: IParams }) => {
   return ( 
     <div className="lg:pl-80 h-full">
       <div className="h-full flex flex-col">
+        <AudioProvider>
         <Header conversation={conversation} />
         <Body initialMessages={messages} />
         <Form />
+        </AudioProvider>
       </div>
     </div>
   );

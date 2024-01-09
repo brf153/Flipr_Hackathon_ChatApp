@@ -79,3 +79,13 @@ model Message {
   senderId String @db.ObjectId
   sender User @relation(fields: [senderId], references: [id], onDelete: Cascade)
 }
+
+model Scheduler {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  senderId    String   @db.ObjectId
+  receiverId  String[]   @db.ObjectId
+  receiverName String[]
+  createdAt   DateTime @default(now())
+  time        String
+  message     String
+}

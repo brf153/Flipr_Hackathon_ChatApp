@@ -16,11 +16,30 @@ import useConversation from "@/app/hooks/useConversation";
 import data from '@emoji-mart/data'
 import Picker from '@emoji-mart/react'
 import { MdEmojiEmotions } from "react-icons/md";
+import { AudioRecorder, useAudioRecorder } from 'react-audio-voice-recorder';
+import { useAudioContext } from '@/app/context/AudioContext';
+import { BsRecordCircle } from 'react-icons/bs';
+import { IoStop } from 'react-icons/io5';
+
 
 const Form = () => {
   const { conversationId } = useConversation();
   const [emojiDrawer, setEmojiDrawer] = React.useState(false);
   const [emoji, setEmoji] = React.useState([] as any);
+  const { audioContainerRef } = useAudioContext();
+  const [showRecording, setRecording] = React.useState(true);
+  // const [showRecording, setRecording] = React.useState(true);
+  // const {
+  //   startRecording,
+  //   stopRecording,
+  //   togglePauseResume,
+  //   recordingBlob,
+  //   isRecording,
+  //   isPaused,
+  //   recordingTime,
+  //   mediaRecorder
+  // } = useAudioRecorder();
+  const recorderControls = useAudioRecorder()
   const {
     register,
     handleSubmit,
@@ -57,6 +76,19 @@ const Form = () => {
     const updatedValue = currentValue + e.native;
     setValue('message', updatedValue);
     setEmoji((prevEmojis:any) => [...prevEmojis, e.native]);
+  };
+
+  const addAudioElement = (e:any) => {
+    console.log("Recording complete", e)
+    recorderControls.stopRecording();
+    const url = URL.createObjectURL(e);
+    const audio = document.createElement('audio');
+    audio.src = url;
+    console.log('audioContainerRef.current:', audioContainerRef.current);
+
+    if (audioContainerRef.current) {
+      audioContainerRef.current.appendChild(audio);
+    }
   };
 
   return ( 
@@ -120,6 +152,23 @@ const Form = () => {
           />
         </button>
       </form>
+      <AudioRecorder 
+        onRecordingComplete={(blob) => addAudioElement(blob)}
+        recorderControls={recorderControls}
+      />
+      {/* {
+        showRecording ? (
+          <BsRecordCircle onClick={() => {
+            setRecording(true);
+            recorderControls.startRecording();
+          }} />
+        ):(
+          <IoStop onClick={(e)=>{
+            setRecording(false);
+            recorderControls.stopRecording();
+          }}/>
+        )
+      } */}
     </div>
   );
 }
