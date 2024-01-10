@@ -39,6 +39,8 @@ export async function POST(request: Request) {
       },
     });
 
+    console.log( 'SCHEDULER_ENTRY', schedulerEntry)
+
 
     const now = new Date();
     const scheduledDate = new Date(datetime);
