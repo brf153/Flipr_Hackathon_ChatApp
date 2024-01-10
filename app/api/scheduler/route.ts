@@ -72,7 +72,7 @@ export async function POST(request: Request) {
 
         
         // console.log(conversationId, 'CONVERSATION_ID')
-
+          console.log("Before making new message")
         // To create message
         for(const id of conversationId) {
             console.log(id, 'ID')
@@ -92,8 +92,12 @@ export async function POST(request: Request) {
           },
         });
 
+        console.log("Checking Id", id)
+
         // Notify the conversation about the new message
         await pusherServer.trigger(id, 'messages:new', newMessage);
+
+        console.log("After pusherServer")
 
         // Update user conversations with the latest message
         const updatedConversation = await prisma.conversation.update({
