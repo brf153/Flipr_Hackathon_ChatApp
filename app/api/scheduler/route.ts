@@ -17,6 +17,8 @@ export async function POST(request: Request) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
+    console.log("Members", members)
+
     const receiverIdArray: string[] = []
     for (let i = 0; i < members.length; i++) {
       receiverIdArray.push(members[i].value)
@@ -37,19 +39,13 @@ export async function POST(request: Request) {
       },
     });
 
-    // Implement your scheduling logic here
-    // For simplicity, let's assume the scheduled time is in the future
+
     const now = new Date();
     const scheduledDate = new Date(datetime);
-
-    // Calculate the delay until the scheduled time
     const delayMillis = scheduledDate.getTime() - now.getTime();
 
     // Schedule a message to be sent after the specified delay
     setTimeout(async () => {
-      for (const receiverId of receiverIdArray) {
-
-
 
         let conversationId: any = [];
         // To get the conversationId
@@ -58,6 +54,7 @@ export async function POST(request: Request) {
             if (user.id === id) {
               for (const receivedUserConversationId of user.conversationIds) {
                 for (const currentUserConversationId of currentUser.conversationIds) {
+                  console.log(receivedUserConversationId, currentUserConversationId, 'CONVERSATION_ID')
                   if (receivedUserConversationId === currentUserConversationId) {
                     conversationId.push(currentUserConversationId)
 
@@ -69,11 +66,11 @@ export async function POST(request: Request) {
         }
 
         
-        console.log(conversationId, 'CONVERSATION_ID')
+        // console.log(conversationId, 'CONVERSATION_ID')
 
         // To create message
         for(const id of conversationId) {
-            // Create a new message
+            console.log(id, 'ID')
         const newMessage = await prisma.message.create({
           include: {
             seen: true,
@@ -129,13 +126,13 @@ export async function POST(request: Request) {
             await pusherServer.trigger(userConversation, 'conversation:update', conversationUpdatePayload);
           }
           else {
-            console.log("Conversation Id not found!")
+            console.log("Conversation Id not found for ", userConversation)
           }
         });
 
         }
 
-      }
+      
     }, delayMillis);
 
     await pusherServer.trigger(currentUser.id, 'scheduler:new', schedulerEntry);
