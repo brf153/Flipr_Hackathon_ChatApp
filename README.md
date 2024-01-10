@@ -1,6 +1,6 @@
 # Chat App
 
-A real-time chat application built with Next.js 13, Prisma, MongoDB, TypeScript, and deployed on Vercel.
+A real-time chat application built with Next.js 13, Prisma, MongoDB, TypeScript, Pusher and deployed on Vercel.
 
 ## Features
 
@@ -22,6 +22,9 @@ A real-time chat application built with Next.js 13, Prisma, MongoDB, TypeScript,
   - Next.js Serverless functions
   - Prisma (MongoDB ORM)
   - MongoDB
+
+- **Real-Time Communication:**
+  - Pusher
 
 - **Deployment:**
   - Vercel
