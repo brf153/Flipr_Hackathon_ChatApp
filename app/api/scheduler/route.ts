@@ -82,7 +82,7 @@ export async function POST(request: Request) {
           data: {
             body: message,
             conversation: {
-              connect: { id: conversationId }
+              connect: { id: id }
             },
             sender: {
               connect: { id: currentUser.id }
@@ -91,12 +91,12 @@ export async function POST(request: Request) {
         });
 
         // Notify the conversation about the new message
-        await pusherServer.trigger(conversationId, 'messages:new', newMessage);
+        await pusherServer.trigger(id, 'messages:new', newMessage);
 
         // Update user conversations with the latest message
         const updatedConversation = await prisma.conversation.update({
           where: {
-            id: conversationId
+            id: id
           },
           data: {
             lastMessageAt: new Date(),
@@ -120,12 +120,12 @@ export async function POST(request: Request) {
         const lastMessage = updatedConversation.messages[updatedConversation.messages.length - 1];
 
         const conversationUpdatePayload = {
-          id: conversationId,
+          id: id,
           messages: [lastMessage],
         };
 
         currentUser.conversationIds.forEach(async (userConversation) => {
-          if (userConversation === conversationId) {
+          if (userConversation === id) {
             await pusherServer.trigger(userConversation, 'conversation:update', conversationUpdatePayload);
           }
           else {
