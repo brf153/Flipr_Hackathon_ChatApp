@@ -17,12 +17,12 @@ export async function POST(request: Request) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    const receiverIdArray: String[] = []
+    const receiverIdArray: string[] = []
     for (let i = 0; i < members.length; i++) {
       receiverIdArray.push(members[i].value)
     }
 
-    const receiverNameArray: String[] = []
+    const receiverNameArray: string[] = []
     for (let i = 0; i < members.length; i++) {
       receiverNameArray.push(members[i].label)
     }
