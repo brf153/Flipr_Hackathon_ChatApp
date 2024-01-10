@@ -29,6 +29,8 @@ export async function POST(request: Request) {
       receiverNameArray.push(members[i].label)
     }
 
+    console.log("Before schedulerEntry")
+
     const schedulerEntry = await prisma.scheduler.create({
       data: {
         senderId: currentUser.id,
@@ -46,6 +48,7 @@ export async function POST(request: Request) {
     const scheduledDate = new Date(datetime);
     const delayMillis = scheduledDate.getTime() - now.getTime();
 
+    console.log("Before setTimeout")
     // Schedule a message to be sent after the specified delay
     setTimeout(async () => {
 
@@ -136,6 +139,8 @@ export async function POST(request: Request) {
 
       
     }, delayMillis);
+
+    console.log("After setTimeout")
 
     await pusherServer.trigger(currentUser.id, 'scheduler:new', schedulerEntry);
 
