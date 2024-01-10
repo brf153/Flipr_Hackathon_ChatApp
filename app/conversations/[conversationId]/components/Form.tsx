@@ -16,10 +16,12 @@ import useConversation from "@/app/hooks/useConversation";
 import data from '@emoji-mart/data'
 import Picker from '@emoji-mart/react'
 import { MdEmojiEmotions } from "react-icons/md";
-import { AudioRecorder, useAudioRecorder } from 'react-audio-voice-recorder';
+import {AudioRecorder, useAudioRecorder} from "react-audio-voice-recorder";
 import { useAudioContext } from '@/app/context/AudioContext';
 import { BsRecordCircle } from 'react-icons/bs';
 import { IoStop } from 'react-icons/io5';
+import { promisify } from 'util';
+import zlib from 'zlib';
 
 
 const Form = () => {
@@ -28,17 +30,16 @@ const Form = () => {
   const [emoji, setEmoji] = React.useState([] as any);
   const { audioContainerRef } = useAudioContext();
   const [showRecording, setRecording] = React.useState(true);
-  // const [showRecording, setRecording] = React.useState(true);
-  // const {
-  //   startRecording,
-  //   stopRecording,
-  //   togglePauseResume,
-  //   recordingBlob,
-  //   isRecording,
-  //   isPaused,
-  //   recordingTime,
-  //   mediaRecorder
-  // } = useAudioRecorder();
+  const {
+    startRecording,
+    stopRecording,
+    togglePauseResume,
+    recordingBlob,
+    isRecording,
+    isPaused,
+    recordingTime,
+    mediaRecorder
+  } = useAudioRecorder();
   const recorderControls = useAudioRecorder()
   const {
     register,
@@ -59,6 +60,7 @@ const Form = () => {
     setValue('message', '', { shouldValidate: true });
     axios.post('/api/messages', {
       ...data,
+      dataType: 'text',
       conversationId: conversationId
     })
   }
@@ -66,6 +68,7 @@ const Form = () => {
   const handleUpload = (result: any) => {
     axios.post('/api/messages', {
       image: result.info.secure_url,
+      dataType: 'image',
       conversationId: conversationId
     })
   }
@@ -78,18 +81,60 @@ const Form = () => {
     setEmoji((prevEmojis:any) => [...prevEmojis, e.native]);
   };
 
-  const addAudioElement = (e:any) => {
-    console.log("Recording complete", e)
-    recorderControls.stopRecording();
-    const url = URL.createObjectURL(e);
-    const audio = document.createElement('audio');
-    audio.src = url;
-    console.log('audioContainerRef.current:', audioContainerRef.current);
-
-    if (audioContainerRef.current) {
-      audioContainerRef.current.appendChild(audio);
+  const addAudioElement = async (blob: Blob) => {
+    try {
+      const CHUNK_SIZE = 1024; 
+      const base64String = await convertBlobToBase64(blob);
+      // Now you have the Base64 representation of the WAV file
+      const compressedData = await compressData(base64String);
+      const chunkedData = chunkString(compressedData.toString('base64'), CHUNK_SIZE);
+      for (const data in chunkedData) {
+        axios.post('/api/messages', {
+          message: data,
+          dataType: 'audio',
+          conversationId: conversationId
+        })
+      }
+      console.log('Base64 String:', chunkedData);
+    } catch (error) {
+      console.error('Error converting WAV to Base64:', error);
     }
   };
+
+  const chunkString = (str: string, size: number): string[] => {
+    const numChunks = Math.ceil(str.length / size);
+    const chunks = new Array(numChunks);
+  
+    for (let i = 0, o = 0; i < numChunks; ++i, o += size) {
+      chunks[i] = str.substr(o, size);
+    }
+  
+    return chunks;
+  };
+
+  const convertBlobToBase64 = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          resolve(reader.result.split(',')[1]);
+        } else {
+          reject(new Error('Failed to convert Blob to Base64.'));
+        }
+      };
+      reader.onerror = () => {
+        reject(new Error('Error reading Blob as data URL.'));
+      };
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  const compressData = async (data: string): Promise<Buffer> => {
+    const compressedBuffer = await deflateAsync(Buffer.from(data, 'base64'));
+    return compressedBuffer;
+  };
+
+  const deflateAsync = promisify(zlib.deflate);
 
   return ( 
     <div 
@@ -114,7 +159,7 @@ const Form = () => {
       </CldUploadButton>
 
       <div className='flex flex-col-reverse relative'>
-      <MdEmojiEmotions size={30} className='text-sky-500' onClick={()=>setEmojiDrawer(!emojiDrawer)}/>
+      <MdEmojiEmotions size={30} className='text-sky-500 cursor-pointer' onClick={()=>setEmojiDrawer(!emojiDrawer)}/>
       {
         emojiDrawer && (
           <div className='absolute bottom-[50px]'>
@@ -152,10 +197,16 @@ const Form = () => {
           />
         </button>
       </form>
+
       <AudioRecorder 
-        onRecordingComplete={(blob) => addAudioElement(blob)}
-        recorderControls={recorderControls}
-      />
+      onRecordingComplete={addAudioElement}
+      audioTrackConstraints={{
+        noiseSuppression: true,
+        echoCancellation: true,
+      }} 
+      downloadOnSavePress={false}
+    />
+
       {/* {
         showRecording ? (
           <BsRecordCircle onClick={() => {
@@ -169,6 +220,7 @@ const Form = () => {
           }}/>
         )
       } */}
+
     </div>
   );
 }

@@ -4,6 +4,9 @@ import getCurrentUser from "@/app/actions/getCurrentUser";
 import { pusherServer } from '@/app/libs/pusher'
 import prisma from "@/app/libs/prismadb";
 
+import { promisify } from 'util';
+import zlib from 'zlib';
+
 export async function POST(
   request: Request,
 ) {
@@ -13,11 +16,46 @@ export async function POST(
     const {
       message,
       image,
-      conversationId
+      conversationId,
+      dataType
     } = body;
 
     if (!currentUser?.id || !currentUser?.email) {
       return new NextResponse('Unauthorized', { status: 401 });
+    }
+
+    if(dataType === 'audio') {
+
+      const inflateAsync = promisify(zlib.inflate);
+
+const CHUNK_SIZE = 1024; // Set your desired chunk size
+
+let receivedChunks: { [index: number]: string } = {};
+
+// Handle incoming chunks from Pusher
+const handleIncomingChunks = (data: any) => {
+  const { chunk, index, totalChunks } = JSON.parse(data);
+
+  receivedChunks[index] = chunk;
+
+  if (Object.keys(receivedChunks).length === totalChunks) {
+    // All chunks received, reconstruct the original blob
+    const originalBlob = reconstructOriginalBlob(totalChunks);
+    // Further processing or return the original blob as needed
+    console.log('Original Blob:', originalBlob);
+  }
+};
+
+// Reconstruct the original blob from received chunks
+const reconstructOriginalBlob = (totalChunks: number): string => {
+  let originalString = '';
+
+  for (let i = 0; i < totalChunks; i++) {
+    originalString += receivedChunks[i];
+  }
+
+  return originalString;
+};
     }
 
     const newMessage = await prisma.message.create({

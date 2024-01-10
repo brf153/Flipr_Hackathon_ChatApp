@@ -112,6 +112,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
                 hover:opacity-75 
                 transition
               "
+              title="New Group"
             >
               <MdOutlineGroupAdd size={20} />
             </div>
