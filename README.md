@@ -108,7 +108,7 @@ The sidebar encompasses several options: Chat, Users, Scheduler, and Logout.
 - To address this issue more effectively, I would create a separate backend dedicated to scheduling messages. By making requests to this separate backend, we can ensure the reliable execution of your scheduled message functionality.
 
 
-## Voice Messaging
+### Voice Messaging
 
 - I've introduced a voice message icon in the input bar within the conversation list. However, there's an issue with its functionality.
 
