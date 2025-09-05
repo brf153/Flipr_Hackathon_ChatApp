@@ -22,6 +22,7 @@ A real-time chat application built with Next.js 13, Prisma, MongoDB, TypeScript,
   - Next.js Serverless functions
   - Prisma (MongoDB ORM)
   - MongoDB
+  - Agenda (Job Scheduler)
 
 - **Real-Time Communication:**
   - Pusher
