@@ -8,54 +8,96 @@ import getUsers from "@/app/actions/getUsers";
 
 export async function POST(request: Request) {
   try {
+    console.log('[POST] Schedule API called');
     const currentUser = await getCurrentUser();
-    const allUsers = await getUsers();
-    const body = await request.json();
-
-    const { datetime, members, message } = body;
-
     if (!currentUser?.id || !currentUser?.email) {
-      return new NextResponse("Unauthorized", { status: 401 });
+      return new Response('Unauthorized: User not authenticated', { status: 401 });
     }
 
-    const receiverIdArray: string[] = [];
-    for (let i = 0; i < members.length; i++) {
-      receiverIdArray.push(members[i].value);
+    let allUsers;
+    try {
+      allUsers = await getUsers();
+    } catch (err) {
+      return new Response('Failed to fetch users', { status: 500 });
     }
 
-    const receiverNameArray: string[] = [];
-    for (let i = 0; i < members.length; i++) {
-      receiverNameArray.push(members[i].label);
+    let body;
+    try {
+      body = await request.json();
+      console.log('[POST] Request body parsed:', body);
+    } catch (err) {
+      console.error('[POST] Error parsing request body:', err);
+      return new Response('Invalid JSON body', { status: 400 });
     }
 
-    const schedulerEntry = await prisma.scheduler.create({
-      data: {
-        senderId: currentUser.id,
-        receiverId: receiverIdArray,
-        receiverName: receiverNameArray,
-        time: datetime,
-        message: message,
-      },
-    });
+    const { datetime, members = [], message } = body;
+    console.log('[POST] Extracted fields:', { datetime, members, message });
+    if (!datetime || !message || members.length === 0) {
+      return new Response('Invalid input: datetime, message, and members are required', { status: 400 });
+    }
 
-    // Schedule the job with Agenda
-    await agenda.start();
-    await agenda.schedule(datetime, "send scheduled message", {
-      receiverIdArray,
-      message,
-      currentUserId: currentUser.id,
-      currentUserConversationIds: currentUser.conversationIds,
-      allUsers,
-    });
+    type Member = { value: string; label: string };
+    const receiverIdArray = (members as Member[]).map((m: Member) => m.value);
+    const receiverNameArray = (members as Member[]).map((m: Member) => m.label);
+    console.log('[POST] Receiver arrays:', { receiverIdArray, receiverNameArray });
 
-    await pusherServer.trigger(currentUser.id, "scheduler:new", schedulerEntry);
+    const backendUrl = process.env.SERVER_URL
+      ? `${process.env.SERVER_URL}/schedule`
+      : 'http://localhost:4000/schedule';
 
-    return NextResponse.json(schedulerEntry);
+    console.log('[POST] Backend URL:', backendUrl);
+
+    let res;
+    try {
+      const payload = {
+        receiverIdArray,
+        receiverNameArray,
+        message,
+        currentUserId: currentUser.id,
+        currentUserConversationIds: currentUser.conversationIds,
+        allUsers,
+        datetime,
+      };
+      console.log('[POST] Sending payload to backend:', payload);
+      res = await fetch(backendUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      console.log('[POST] Backend response status:', res.status);
+    } catch (err) {
+      console.error('[POST] Error connecting to backend:', err);
+      return new Response('Failed to connect to backend service', { status: 502 });
+    }
+
+    if (!res.ok) {
+      let errorText = 'Failed to schedule message';
+      try {
+        errorText = await res.text();
+        console.warn('[POST] Backend error response:', errorText);
+      } catch (err) {
+        console.error('[POST] Error reading backend error response:', err);
+      }
+      return new Response(errorText, { status: res.status });
+    }
+
+    let result;
+    try {
+      result = await res.json();
+      console.log('[POST] Backend response JSON:', result);
+    } catch (err) {
+      console.error('[POST] Error parsing backend response:', err);
+      return new Response('Invalid response from backend', { status: 502 });
+    }
+
+    console.log('[POST] Schedule message successfully processed');
+    return new Response(JSON.stringify(result), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (error) {
-    console.log(error, "ERROR_MESSAGES");
-    return new NextResponse("Error", { status: 500 });
+    console.error('[POST] Unexpected error in schedule POST:', error);
+    return new Response('Internal Server Error', { status: 500 });
   }
 }
+
 
 export async function GET(request: Request) {
   try {

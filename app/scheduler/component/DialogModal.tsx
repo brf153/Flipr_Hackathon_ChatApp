@@ -50,7 +50,6 @@ const GroupChatModal: React.FC<GroupChatModalProps> = ({
 
     const onSubmit: SubmitHandler<FieldValues> = (data) => {
         setIsLoading(true);
-        console.log("data ", data)
 
         axios.post('/api/scheduler', {
             ...data

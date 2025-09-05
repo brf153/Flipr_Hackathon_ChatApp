@@ -19,7 +19,6 @@ interface SchedulerProps {
 
 const Scheduler = ({ scheduledMessages, userName, users }: SchedulerProps) => {
 
-  console.log("scheduledMessages", scheduledMessages)
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const openDialog = () => {
     setIsModalOpen(true);
