@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 
 import getCurrentUser from "@/app/actions/getCurrentUser";
-import { pusherServer } from '@/app/libs/pusher';
+import { pusherServer } from "@/app/libs/pusher";
 import prisma from "@/app/libs/prismadb";
+import agenda from "@/app/libs/agenda";
 import getUsers from "@/app/actions/getUsers";
 
 export async function POST(request: Request) {
@@ -14,22 +15,18 @@ export async function POST(request: Request) {
     const { datetime, members, message } = body;
 
     if (!currentUser?.id || !currentUser?.email) {
-      return new NextResponse('Unauthorized', { status: 401 });
+      return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    console.log("Members", members)
-
-    const receiverIdArray: string[] = []
+    const receiverIdArray: string[] = [];
     for (let i = 0; i < members.length; i++) {
-      receiverIdArray.push(members[i].value)
+      receiverIdArray.push(members[i].value);
     }
 
-    const receiverNameArray: string[] = []
+    const receiverNameArray: string[] = [];
     for (let i = 0; i < members.length; i++) {
-      receiverNameArray.push(members[i].label)
+      receiverNameArray.push(members[i].label);
     }
-
-    console.log("Before schedulerEntry")
 
     const schedulerEntry = await prisma.scheduler.create({
       data: {
@@ -37,121 +34,26 @@ export async function POST(request: Request) {
         receiverId: receiverIdArray,
         receiverName: receiverNameArray,
         time: datetime,
-        message: message
+        message: message,
       },
     });
 
-    console.log( 'SCHEDULER_ENTRY', schedulerEntry)
+    // Schedule the job with Agenda
+    await agenda.start();
+    await agenda.schedule(datetime, "send scheduled message", {
+      receiverIdArray,
+      message,
+      currentUserId: currentUser.id,
+      currentUserConversationIds: currentUser.conversationIds,
+      allUsers,
+    });
 
-
-    const now = new Date();
-    const scheduledDate = new Date(datetime);
-    const delayMillis = scheduledDate.getTime() - now.getTime();
-
-    console.log("Before setTimeout")
-    // Schedule a message to be sent after the specified delay
-    setTimeout(async () => {
-
-        let conversationId: any = [];
-        // To get the conversationId
-        for (const id of receiverIdArray) {
-          for (const user of allUsers) {
-            if (user.id === id) {
-              for (const receivedUserConversationId of user.conversationIds) {
-                for (const currentUserConversationId of currentUser.conversationIds) {
-                  console.log(receivedUserConversationId, currentUserConversationId, 'CONVERSATION_ID')
-                  if (receivedUserConversationId === currentUserConversationId) {
-                    conversationId.push(currentUserConversationId)
-
-                  }
-                }
-              }
-            }
-          }
-        }
-
-        
-        // console.log(conversationId, 'CONVERSATION_ID')
-          console.log("Before making new message")
-        // To create message
-        for(const id of conversationId) {
-            console.log(id, 'ID')
-        const newMessage = await prisma.message.create({
-          include: {
-            seen: true,
-            sender: true
-          },
-          data: {
-            body: message,
-            conversation: {
-              connect: { id: id }
-            },
-            sender: {
-              connect: { id: currentUser.id }
-            }
-          },
-        });
-
-        console.log("Checking Id", id)
-
-        // Notify the conversation about the new message
-        await pusherServer.trigger(id, 'messages:new', newMessage);
-
-        console.log("After pusherServer")
-
-        // Update user conversations with the latest message
-        const updatedConversation = await prisma.conversation.update({
-          where: {
-            id: id
-          },
-          data: {
-            lastMessageAt: new Date(),
-            messages: {
-              connect: {
-                id: newMessage.id
-              }
-            }
-          },
-          include: {
-            users: true,
-            messages: {
-              include: {
-                seen: true
-              }
-            }
-          }
-        });
-
-
-        const lastMessage = updatedConversation.messages[updatedConversation.messages.length - 1];
-
-        const conversationUpdatePayload = {
-          id: id,
-          messages: [lastMessage],
-        };
-
-        currentUser.conversationIds.forEach(async (userConversation) => {
-          if (userConversation === id) {
-            await pusherServer.trigger(userConversation, 'conversation:update', conversationUpdatePayload);
-          }
-          else {
-            console.log("Conversation Id not found for ", userConversation)
-          }
-        });
-
-        }
-
-      
-    }, delayMillis);
-
-    console.log("After setTimeout")
-
-    await pusherServer.trigger(currentUser.id, 'scheduler:new', schedulerEntry);
+    await pusherServer.trigger(currentUser.id, "scheduler:new", schedulerEntry);
 
     return NextResponse.json(schedulerEntry);
   } catch (error) {
-    console.log(error, 'ERROR_MESSAGES');
-    return new NextResponse('Error', { status: 500 });
+    console.log(error, "ERROR_MESSAGES");
+    return new NextResponse("Error", { status: 500 });
   }
 }
 
@@ -167,46 +69,11 @@ export async function GET(request: Request) {
     const responseData = {
       userInfo: currentUser,
       messageSchedules: messageSchedules,
-    }
+    };
 
     return NextResponse.json(responseData);
-  }
-  catch (error) {
-    console.log(error, 'ERROR_MESSAGES');
-    return new NextResponse('Error', { status: 500 });
+  } catch (error) {
+    console.log(error, "ERROR_MESSAGES");
+    return new NextResponse("Error", { status: 500 });
   }
 }
-
-
-// const updateScheduler = await prisma.scheduler.update({
-//     where: {
-//         id: messageId
-//     },
-//     data: {
-//         message: message,
-//         time: time,
-//         receiverId: receiverId,
-//     }
-// })
-
-// if(!updateScheduler) {
-
-//     await pusherServer.trigger(senderId, 'scheduler:new', schedulerEntry);
-// } else {
-//     await pusherServer.trigger(senderId, 'scheduler:update', updateScheduler);
-// }
-
-
-        //     const matchingConversationId = receiverIdArray
-        //   .flatMap(id =>
-        //     allUsers
-        //       .filter(user => user.id === id)
-        //       .flatMap(user =>
-        //         user.conversationIds.filter(conversation =>
-        //           currentUser.conversationIds.includes(conversation)
-        //         )
-        //       )
-        //   )[0];
-
-        // // If there's a matching conversationId, use it; otherwise, handle the case where it's not found.
-        // const conversationId = matchingConversationId || /* default value or error handling */;
