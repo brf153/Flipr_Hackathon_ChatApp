@@ -6,7 +6,7 @@ interface Message {
   receiverName: string[];
   userName: string;
   message: string;
-  time: string;
+  createdAt: string;
 }
 
 interface TableProps {
@@ -49,13 +49,14 @@ const Table: React.FC<TableProps> = ({ messages, userName }) => {
           </th>
         </tr>
       </thead>
+
       <tbody className="bg-white divide-y divide-gray-200">
         {messages.map((message) => (
           <tr key={message.id}>
             <td className="px-6 py-4 whitespace-nowrap">{message.receiverName.join(', ')}</td>
             <td className="px-6 py-4 whitespace-nowrap">{userName}</td>
             <td className="px-6 py-4 whitespace-nowrap">{message.message}</td>
-            <td className="px-6 py-4 whitespace-nowrap">{formatDateTime(message.time)}</td>
+            <td className="px-6 py-4 whitespace-nowrap">{formatDateTime(message.createdAt)}</td>
           </tr>
         ))}
       </tbody>
