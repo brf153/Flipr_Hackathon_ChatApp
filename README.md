@@ -103,17 +103,8 @@ The sidebar encompasses several options: Chat, Users, Scheduler, and Logout.
 
 - I have implemented a Message Scheduler in my app. You can access it by clicking on the button next to the `New Message` text. This action opens a dialog box, allowing you to schedule a new message.
 
-- However, please note that there is an issue with the deployment on Vercel. The current implementation relies on the `setTimeout` function in the serverless backend of Next.js 13. Unfortunately, Vercel does not interpret the `setTimeout` function in the deployed environment, resulting in its omission.
+- The scheduler now uses the [Agenda](https://github.com/agenda/agenda) job library with MongoDB for reliable message scheduling.
 
-- To address this issue more effectively, I would create a separate backend dedicated to scheduling messages. By making requests to this separate backend, we can ensure the reliable execution of your scheduled message functionality.
-
-
-### Voice Messaging
-
-- I've introduced a voice message icon in the input bar within the conversation list. However, there's an issue with its functionality.
-
-- The problem arises from the voice recorder storing the file in .wav format. Currently, I attempt to convert this blob to a base64 string and then send it to the client. However, the implementation faces limitations as Pusher does not permit the transmission of longer messages.
-
-- To enhance this feature, a more effective approach would be to break the base64 string into smaller chunks before sending it to the client. This modification should address the constraints posed by Pusher and allow for the successful transmission and rendering of voice messages.
+- With Agenda, scheduled messages are handled in the backend and persist even if the server restarts or scales. This ensures your scheduled messages are sent reliably in both development and production deployments.
 
 
