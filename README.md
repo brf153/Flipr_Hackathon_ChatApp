@@ -103,7 +103,7 @@ The sidebar encompasses several options: Chat, Users, Scheduler, and Logout.
 
 - I have implemented a Message Scheduler in my app. You can access it by clicking on the button next to the `New Message` text. This action opens a dialog box, allowing you to schedule a new message.
 
-- **Scheduling is now handled by a backend service triggered by [cron-job.org](https://cron-job.org/).** Instead of using the Agenda job library, scheduled messages are managed by an external backend endpoint that is called by cron-job.org at regular intervals.
+- **Scheduling is now handled by a backend service triggered by [cron-job.org](https://cron-job.org/).** Scheduled messages are managed by an external backend endpoint that is called by cron-job.org at regular intervals.
 
 - For large-scale or production-ready applications, it is recommended to use a dedicated background worker for more robust and scalable scheduling. However, for a simple implementation and the scope of this hackathon project, using cron-job.org provides a quick and effective solution without additional infrastructure.
 
