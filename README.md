@@ -22,7 +22,6 @@ A real-time chat application built with Next.js 13, Prisma, MongoDB, TypeScript,
   - Next.js Serverless functions
   - Prisma (MongoDB ORM)
   - MongoDB
-  - Agenda (Job Scheduler)
 
 - **Real-Time Communication:**
   - Pusher
@@ -104,8 +103,10 @@ The sidebar encompasses several options: Chat, Users, Scheduler, and Logout.
 
 - I have implemented a Message Scheduler in my app. You can access it by clicking on the button next to the `New Message` text. This action opens a dialog box, allowing you to schedule a new message.
 
-- The scheduler now uses the [Agenda](https://github.com/agenda/agenda) job library with MongoDB for reliable message scheduling.
+- **Scheduling is now handled by a backend service triggered by [cron-job.org](https://cron-job.org/).** Instead of using the Agenda job library, scheduled messages are managed by an external backend endpoint that is called by cron-job.org at regular intervals.
 
-- With Agenda, scheduled messages are handled in the backend and persist even if the server restarts or scales. This ensures your scheduled messages are sent reliably in both development and production deployments.
+- For large-scale or production-ready applications, it is recommended to use a dedicated background worker for more robust and scalable scheduling. However, for a simple implementation and the scope of this hackathon project, using cron-job.org provides a quick and effective solution without additional infrastructure.
+
+- This approach allows reliable scheduling without requiring a persistent job runner on your server, and works well with serverless deployments or free hosting solutions.
 
 
